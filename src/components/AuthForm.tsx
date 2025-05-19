@@ -14,6 +14,7 @@ import { RegisterLink, LoginLink } from "@kinde-oss/kinde-auth-nextjs/components
 type Props = {
     type: "login" | "sign-up"
 }
+
 function AuthForm({ type }: Props) {
     const isLoginForm = type === "login";
 
