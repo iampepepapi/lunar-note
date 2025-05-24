@@ -123,3 +123,13 @@
 }
 
 /* CUSTOM CSS */
+
+ProseMirror:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+
+.ProseMirror-focused {
+  outline: none;
+}
