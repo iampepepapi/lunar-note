@@ -3,10 +3,18 @@ import { StarterKit } from '@tiptap/starter-kit';
 import { TextAlign } from '@tiptap/extension-text-align';
 import Heading from '@tiptap/extension-heading';
 import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, MenubarTrigger } from "@/components/ui/menubar";
-import React, { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useState, useEffect } from 'react';
+import ReactMarkdown, { Components } from 'react-markdown';
 import { AlignCenter, AlignLeft, AlignRight, Bold, Eye, Italic, Pencil, Strikethrough } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Markdown } from 'tiptap-markdown';
+import remarkGfm from 'remark-gfm';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css'; // You can choose different themes
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+// Import more language support as needed
 
 interface NotesLayoutProps {
     notes: Note[];
@@ -50,11 +58,18 @@ function NotesLayout({
         content: '',
         extensions: [
             StarterKit.configure({
-                heading: false, // disable default heading entirely
+                heading: false,
+                bulletList: false,  // Disable auto bullet lists
+                orderedList: false,
+                codeBlock: false,  // Disable code blocks
             }),
             CustomHeading,
             TextAlign.configure({
                 types: ['paragraph'],
+            }),
+            Markdown.configure({
+                breaks: true,
+                html: false,
             }),
         ],
         editable: !isPreview,
@@ -72,15 +87,90 @@ function NotesLayout({
         setIsPreview(!isPreview);
     };
 
+    const markdownComponents: Components = {
+        code: ({ node, children, className, ...props }) => {
+            const match = /language-(\w+)/.exec(className || '')
+            const lang = match ? match[1] : ''
+
+            const codeString = String(children).replace(/\n$/, '');
+
+            useEffect(() => {
+                Prism.highlightAll();
+            }, []);
+
+            return (
+                <div className="relative">
+                    {lang && (
+                        <div className="absolute right-2  text-xs text-gray-400 font-mono">
+                            {lang}
+                        </div>
+                    )}
+                    <pre className="!m-0">
+                        <code
+                            className={`language-${lang} -mt-4 pl-4 block bg-gray-100 dark:bg-gray-800 
+                                rounded-lg  font-mono text-sm overflow-x-auto`}
+                        >
+                            {codeString}
+                        </code>
+                    </pre>
+                </div>
+            )
+        },
+        pre: ({ node, children, ...props }) => (
+            <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-0 my-4" {...props}>
+                {children}
+            </pre>
+        ),
+
+        h1: ({ node, children, ...props }) => (
+            <h1 className="text-4xl font-bold mb-4" {...props}>
+                {children}
+            </h1>
+        ),
+        h2: ({ node, children, ...props }) => (
+            <h2 className="text-3xl font-bold mb-3" {...props}>
+                {children}
+            </h2>
+        ),
+        h3: ({ node, children, ...props }) => (
+            <h3 className="text-2xl font-bold mb-2" {...props}>
+                {children}
+            </h3>
+        ),
+        h4: ({ node, children, ...props }) => (
+            <h4 className="text-xl font-bold mb-2" {...props}>
+                {children}
+            </h4>
+        ),
+        h5: ({ node, children, ...props }) => (
+            <h5 className="text-lg font-bold mb-1" {...props}>
+                {children}
+            </h5>
+        ),
+        h6: ({ node, children, ...props }) => (
+            <h6 className="text-base font-bold mb-1" {...props}>
+                {children}
+            </h6>
+        ),
+
+        // Add paragraph component to handle spacing
+        p: ({ node, children, ...props }) => (
+            <p className="mb-4" {...props}>
+                {children}
+            </p>
+        ),
+    };
+
     return (
         <div className="flex flex-col max-w-5xl justify-center w-full">
             <FormattingBar editor={editor} isPreview={isPreview} handlePreview={handlePreview} />
             <div className="flex pt-8 justify-center focus:outline-none">
                 {isPreview && editor ? (
-                    <ReactMarkdown>
-
-                        {editor.getJSON().content?.[0]?.content?.[0]?.text}
-                    </ReactMarkdown>
+                    <div className="w-full min-h-[600px] overflow-y-auto p-4 pr-6 pb-4 pl-6 border rounded-lg prose dark:prose-invert">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                            {editor.getText()}
+                        </ReactMarkdown>
+                    </div>
                 ) : (
                     <EditorContent
                         editor={editor}
@@ -162,3 +252,4 @@ const FormattingBar = ({ editor, isPreview, handlePreview }: any) => {
         </div>
     );
 };
+
